@@ -1,0 +1,26 @@
+{
+  "name": "learn-vuejs-design-and-impement",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "start": "vite dev"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/CrazyHuiLiang/learn-vuejs-design-and-impement.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/CrazyHuiLiang/learn-vuejs-design-and-impement/issues"
+  },
+  "homepage": "https://github.com/CrazyHuiLiang/learn-vuejs-design-and-impement#readme",
+  "dependencies": {
+    "vue": "^3.5.21"
+  },
+  "devDependencies": {
+    "vite": "^7.1.5"
+  }
+}

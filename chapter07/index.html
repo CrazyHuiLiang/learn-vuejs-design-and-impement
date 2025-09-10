@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html> 
+    <head>
+        <title>渲染器的设计</title>
+        <meta charset="utf-8">
+    </head>
+    <body>
+        <div id="app1"></div>
+        <div id="app2"></div>
+        <script type="module">
+            import {effect, ref} from 'vue';
+            import {createRenderer} from './renderer.ts';
+
+            // 最简单的 renderer 可以是把 html 渲染到 dom 中
+            (() => {
+                function renderer(domString, container) {
+                    container.innerHTML = domString;
+                }
+                const count = ref(0);
+                effect(() => {
+                    const app = document.querySelector('#app1');
+                    renderer(`<h1>${count.value}</h1>`, app);
+                });
+                count.value++;
+            })();
+
+            // 渲染器除了要执行挂载之外，还需要执行更新动作
+            // 通过将渲染器设计为可配置的通用渲染器，即可实现渲染到任意目标平台上
+            (() => { 
+                const renderer = createRenderer({
+                    // 用于创建元素
+                    createElement(tag) {
+                        return document.createElement(tag);
+                    },
+                    // 用于设置元素的文本节点
+                    setElementText(el, text) {
+                        el.textContent = text;
+                    },
+                    // 用于在给定的 parent 下添加指定元素
+                    insert(el, container, anchor = null) {
+                        container.appendChild(el, anchor);
+                    },
+                });
+
+                const vnode = {
+                    type: 'h1',
+                    children: 'hello world',
+                };
+                renderer.render(vnode, document.getElementById('app2'));
+            })();
+        </script>
+    </body>
+</html>
