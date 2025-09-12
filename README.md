@@ -1,4 +1,4 @@
-# learn-vuejs-design-and-impement
+# 学习《Vue.js设计与实现》
 
 - 第一篇 框架设计概览
     - [01 权衡的艺术](./chapter01/README.md)
