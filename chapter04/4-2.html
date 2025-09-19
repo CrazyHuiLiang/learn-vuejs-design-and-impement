@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html> 
+    <head>
+        <title>4-2响应式数据的基本实现</title>
+        <meta charset="utf-8">
+    </head>
+    <body>
+        <div id="app1"></div>
+        <script type="module">
+            // 使用 proxy 实现响应式数据，当读取响应式数据时，将当前副作用函数添加到响应式数据的依赖中，当写数据时，会触发依赖的副作用函数重新执行
+            (() => {
+
+                // 存储副作用函数的桶
+                const bucket = new Set();
+                const data = {text: 'hello world'};
+
+
+                // 对原始数据的代理
+                const obj = new Proxy(data, {
+                    // 拦截读取操作
+                    get(target, key) {
+                        // 将副作用函数添加到存储副作用函数的桶中
+                        bucket.add(effect);
+                        // 返回属性值
+                        return target[key];
+                    },
+                    // 拦截设置操作
+                    set(target, key, value) {
+                        // 设置属性值
+                        target[key] = value;
+                        // 把副作用函数从桶中取出并执行
+                        bucket.forEach(fn => fn());
+                        return true;
+                    }
+                })
+
+                // 副作用函数
+                function effect() {
+                    document.body.innerHTML = obj.text;
+                }
+
+                // 执行副作用函数
+                effect();
+
+                setTimeout(() => {
+                    // 修改响应式数据
+                    obj.text = 'hello vue3';
+                }, 1000);
+            })();
+        </script>
+    </body>
+</html>
