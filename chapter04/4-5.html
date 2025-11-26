@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html> 
+    <head>
+        <title>4-5 嵌套的 effect 与 effect 栈</title>
+        <meta charset="utf-8">
+    </head>
+    <body>
+        <script type="module">
+            // 明确区分出一个依赖关系具体依赖的哪个对象的哪个字段
+            (() => {
+
+                // 用一个全局变量存储当前激活的 effect 函数
+                let activeEffect = null;
+                // effect 栈
+                const effectStack = [];
+
+                function track(target, key) {
+                    // 没有 activeEffect，直接返回
+                    if (!activeEffect) {
+                        return target[key];
+                    }
+
+                    // 根据 target 从桶中取得 depsMap，它是一个 Map 类型：key -> effects
+                    let depsMap = bucket.get(target);
+                    // 如果不存在 depsMap，则创建一个新的 Map 并与 target 关联
+                    if (!depsMap) {
+                        bucket.set(target, (depsMap = new Map()));
+                    }
+
+                    // 再根据 key 从 depsMap 中取得 deps，它是一个 Set 类型
+                    // 里面存储所有与当前 key 关联的副作用函数
+                    let deps = depsMap.get(key);
+                    // 如果不存在 deps，则创建一个新的 Set 并与 key 关联
+                    if (!deps) {
+                        depsMap.set(key, (deps = new Set()));
+                    }
+
+                    // 最后将当前激活的副作用函数添加到依赖集合中
+                    deps.add(activeEffect);
+
+                    // 将依赖收集的集合保存到副作用函数的deps中
+                    activeEffect.deps.push(deps);
+                }
+
+                function trigger(target, key) {
+                    // 根据 target 从桶中取得 depsMap，它存储着 key -> effects
+                    const depsMap = bucket.get(target);
+                    if (!depsMap) return true;
+                    // 根据 key 取得所有副作用函数
+                    const effects = depsMap.get(key);
+                    // console.log('effects', effects);
+                    // 执行副作用函数
+                    if (effects) {
+                        const effectsToRun = new Set(effects);
+                        effectsToRun.forEach(fn => fn());
+                    }
+                }
+
+                // 存储副作用函数的桶
+                const bucket = new WeakMap();
+                const data = {ok: true, text: 'hello world', foo: 'effect1', bar: 'effect2'};
+
+
+                // 对原始数据的代理
+                const obj = new Proxy(data, {
+                    // 拦截读取操作
+                    get(target, key) {
+                        console.log('get', target, key);
+                        track(target, key);
+                        // 返回属性值
+                        return target[key];
+                    },
+                    // 拦截设置操作
+                    set(target, key, value) {
+                        console.log('set', target, key, value);
+                        // 设置属性值
+                        target[key] = value;
+                        trigger(target, key);
+                        return true;
+                    }
+                })
+
+                // 用于注册副作用函数
+                function effect(fn) {
+                    const effectFn = () => {
+                        // 调用 cleanup 函数来清除对当前副作用函数的依赖
+                        cleanup(effectFn);
+
+                        // 当前活跃的副作用函数
+                        activeEffect = effectFn;
+
+                        // 在调用副作用函数之前，将当前副作用函数压入栈中
+                        effectStack.push(effectFn);
+                        fn();
+                        // 当前副作用函数执行完毕后，将当前副作用函数弹出栈，并把 activeEffect 还原为之前的值
+                        effectStack.pop();
+                        activeEffect = effectStack[effectStack.length - 1];
+                    };
+                    // 用于收集副作用函数被哪些响应式数据所依赖
+                    effectFn.deps = [];
+                    // 执行副作用函数
+                    effectFn();
+                }
+
+                // 清除对当前副作用函数的依赖
+                function cleanup(effectFn) {
+                    for (let i = 0; i < effectFn.deps.length; i++) {
+                        const deps = effectFn.deps[i];
+                        deps.delete(effectFn);
+                    }
+                    // 重置 effectFn.deps 数组
+                    effectFn.deps.length = 0;
+                }
+
+                // 执行副作用函数
+                effect(
+                    // 一个匿名的副作用函数
+                    () => {
+                        console.log('effect1 执行');
+
+                        effect(() => {
+                            console.log('effect2 执行');
+                            const temp = obj.bar;
+                        });
+
+                        const temp = obj.foo;
+                    }
+                );
+
+                setTimeout(() => {
+                    // 修改响应式数据
+                    console.log('修改响应式数据---------------------');
+                    obj.foo = 'changed';
+                }, 3000);
+            })();
+        </script>
+    </body>
+</html>
