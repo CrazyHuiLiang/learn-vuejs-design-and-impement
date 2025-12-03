@@ -1,11 +1,12 @@
 <!DOCTYPE html>
 <html> 
     <head>
-        <title>4-8 计算属性 computed 与 lazy</title>
+        <title>4-11. 过期的副作用</title>
         <meta charset="utf-8">
     </head>
     <body>
         <script type="module">
+            // 避免连续多次 watch 回调中，先触发的回调函数中进行的异步处理结果覆盖后触发的回调的结果，需要添加副作用的过期机制
             (() => {
 
                 // 用一个全局变量存储当前激活的 effect 函数
@@ -188,16 +189,107 @@
                 }
 
 
+                // 递归访问对象的所有的值
+                function traverse(value, seen = new Set()) {
+                    // 如果读取的数据是原始值，或者已经被读取过了，那么什么都不做
+                    if (typeof value !== 'object' || value === null || seen.has(value)) {
+                        return;
+                    }
+                    // 将数据添加到 seen 中，代表遍历地读取过了，避免循环引用引起的死循环
+                    seen.add(value);
+                    // 暂时不考虑数组等其他结构
 
-                const sumRes = computed(() => obj.foo + obj.bar);
+                    // 假设 value 就是一个对象，使用 for...in 读取对象的每一个值，并递归地调用 traverse 进行处理
+                    for (const k in value) {
+                        traverse(value[k], seen);
+                    }
+                    return value;
+                }
 
-                // 执行副作用函数
-                effect(() => {
-                    console.log('在副作用函数中读取 sumRes.value:', sumRes.value);
+                function watch(source, cb, options = {}) {
+                    let getter;
+                    if (typeof source === 'function') {
+                        getter = source;
+                    } else {
+                        getter = () => traverse(source);
+                    }
+
+                    // 定义旧值与新值
+                    let oldValue, newValue;
+
+                    // cleanup 用来存储用户注册的过期回调
+                    let cleanup;
+                    // 定义 onInvalidate 函数
+                    function onInvalidate(fn) {
+                        cleanup = fn;
+                    }
+
+                    const job = () => {
+                        
+                        // 重新执行副作用函数，得到的就是新值
+                        newValue = effectFn();
+
+                        // 在调用回调函数之前，先调用过期回调
+                        if (cleanup) {
+                            cleanup();
+                            cleanup = null;
+                        }
+                        // 将旧值和新值作为回调函数的参数
+                        cb(newValue, oldValue, onInvalidate);
+                        // 更新旧值，不然下一次会得到错误的旧值
+                        oldValue = newValue;
+                    };
+
+
+                    // 使用 effect 注册副作用函数时，开启 lazy 选项，并把返回值存储到 effectFn 中，以便后续手动调用
+                    const effectFn = effect(() => getter(), {
+                        lazy: true,
+                        // 使用 job 函数作为调度器函数
+                        scheduler: () => {
+                            // 在 Vue.js3 中，使用 flush 配置指定回调函数的执行时机，其中 pre 和 post 原本语义是指组件更新前和更新后
+                            if (options.flush === 'post') {
+                                // 如果 flush 为 post，将其放在微任务队列中执行
+                                Promise.resolve().then(job);
+                            } else {
+                                job();
+                            }
+                        },
+                    });
+
+
+                    if (options.immediate) {
+                        // 当 immediate 为 true 时，立即执行 job，从而触发回调执行
+                        job();
+                    } else {
+                        // 手动调用副作用函数，拿到的值就是旧值
+                        oldValue = effectFn();
+                    }
+                }
+
+
+                // const sumRes = computed(() => obj.foo + obj.bar);
+
+                // // 执行副作用函数
+                // effect(() => {
+                //     console.log('在副作用函数中读取 sumRes.value:', sumRes.value);
+                // });
+                // setTimeout(() => {
+                //     obj.foo = Date.now();
+                // }, 3000);
+
+
+                watch(obj, (newV, oldV, onInvalidate) => {
+                    let expired = false;
+                    onInvalidate(() => expired = true);
+                    console.log('watch', newV, oldV);
+
+                    // some async operation
+                    if (!expired) {
+                        // do effect operation
+                    }
+                }, {
                 });
-                setTimeout(() => {
-                    obj.foo = Date.now();
-                }, 3000);
+                obj.foo = Date.now();
             })();
         </script>
     </body>

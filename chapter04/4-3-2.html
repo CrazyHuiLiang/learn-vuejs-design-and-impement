@@ -7,7 +7,7 @@
     <body>
         <div id="app1"></div>
         <script type="module">
-            // 明确区分出一个依赖关系具体依赖的哪个对象的哪个字段
+            // 将依赖收集和触发副作用封装到 track 和 trigger 函数
             (() => {
 
                 // 用一个全局变量存储当前激活的 effect 函数
