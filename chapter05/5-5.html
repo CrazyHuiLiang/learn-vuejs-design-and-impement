@@ -352,11 +352,11 @@
                 console.groupEnd();
                 
                 console.group('浅响应');
-                const obj2 = shallowReactive(obj);               
+                const obj2 = shallowReactive(data);               
                 effect(() => {
                     console.log('--  obj.foo.bar', obj2.foo.bar);
                 });
-                obj2.foo.bar = 'changed';
+                obj2.foo.bar = 'changed2';
                 console.groupEnd();
             })();
         </script>

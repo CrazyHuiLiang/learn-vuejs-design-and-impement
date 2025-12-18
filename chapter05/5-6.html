@@ -361,21 +361,25 @@
 
 
                 // 对原始数据的代理
-                const obj = reactive(data)
+                const obj = readonly(data)
 
-                console.group('深响应');
+                console.group('深只读');
                 effect(() => {
                     console.log('--  obj.foo.bar', obj.foo.bar);
                 });
+                obj.foo = 1;
                 obj.foo.bar = 'changed';
+                console.log('obj.foo.bar', obj.foo.bar);
                 console.groupEnd();
                 
-                console.group('浅响应');
-                const obj2 = shallowReactive(obj);               
+                console.group('浅只读');
+                const obj2 = shallowReadonly(data);               
                 effect(() => {
                     console.log('--  obj.foo.bar', obj2.foo.bar);
                 });
+                obj2.foo = 1;
                 obj2.foo.bar = 'changed';
+                console.log('obj.foo.bar', obj2.foo.bar);
                 console.groupEnd();
             })();
         </script>
