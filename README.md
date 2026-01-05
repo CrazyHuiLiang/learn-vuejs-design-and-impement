@@ -6,6 +6,8 @@
     - [03 Vue3 的设计思路](./chapter03/README.md)
 - 第二篇 响应系统
     - [04 响应式系统的作用和实现](./chapter04/README.md)
+    - [05 非原始值的响应式方案](./chapter05/README.md)
+    - [06 原始值的响应式方案](./chapter06/README.md)
 - 第三篇 渲染器
     - [07 渲染器的设计](./chapter07/README.md)
 - 第四篇 组件化
