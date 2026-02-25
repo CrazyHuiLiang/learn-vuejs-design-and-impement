@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html> 
+    <head>
+        <title>8-1. 挂载子节点和元素属性</title>
+        <meta charset="utf-8">
+        <style>
+            #foo {
+                color: red;
+            }
+        </style>
+    </head>
+    <body>
+        <div id="app2"></div>
+        <script type="module">
+            import {effect, ref} from 'vue';
+            import {createRenderer} from './renderer.ts';
+
+
+            // 渲染器除了要执行挂载之外，还需要执行更新动作
+            // 通过将渲染器设计为可配置的通用渲染器，即可实现渲染到任意目标平台上
+            (() => { 
+                const renderer = createRenderer({
+                    // 用于创建元素
+                    createElement(tag) {
+                        return document.createElement(tag);
+                    },
+                    // 用于设置元素的文本节点
+                    setElementText(el, text) {
+                        el.textContent = text;
+                    },
+                    // 用于在给定的 parent 下添加指定元素
+                    insert(el, container, anchor = null) {
+                        container.appendChild(el, anchor);
+                    },
+                });
+
+                const vnode = {
+                    type: 'div',
+                    props: {
+                        id: 'foo',
+                    },
+                    children: [
+                        {type: 'p', children: 'hello world'},
+                    ],
+                };
+                renderer.render(vnode, document.getElementById('app2'));
+            })();
+        </script>
+    </body>
+</html>
