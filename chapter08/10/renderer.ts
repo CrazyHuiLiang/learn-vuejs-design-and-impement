@@ -1,6 +1,9 @@
 // 渲染器除了要执行挂载之外，还需要执行更新动作
 // 通过将渲染器设计为可配置的通用渲染器，即可实现渲染到任意目标平台上
 
+export const Text = Symbol();
+export const Comment = Symbol();
+
 interface RendererOptions {
     createElement(tag: string): any;
     insert(child: any, parent: any, anchor?: any): void;
@@ -17,6 +20,10 @@ interface VNode {
 
 export function createRenderer({
     createElement,
+    createText,
+    setText,
+    createComment,
+    setComment,
     insert,
     setElementText,
     patchProps,
@@ -136,6 +143,28 @@ export function createRenderer({
             } else {
                 // 更新
                 patchElement(n1, n2);
+            }
+        }
+        if (type === Text) {
+            if (!n1) {
+                const el = n2.el = createText(n2.children);
+                insert(el, container);
+            } else {
+                const el = n2.el = n1.el;
+                if (n1.children !== n2.children) {
+                    setText(el, n2.children);
+                }
+            }
+        }
+        if (type === Comment) {
+            if (!n1) {
+                const el = n2.el = createComment(n2.children);
+                insert(el, container);
+            } else {
+                const el = n2.el = n1.el;
+                if (n1.children !== n2.children) {
+                    setComment(el, n2.children);
+                }
             }
         }
         // 组件
