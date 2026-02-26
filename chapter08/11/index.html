@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html> 
+    <head>
+        <title>8-11. Fragment</title>
+        <meta charset="utf-8">
+        <style>
+            #foo {
+                color: red;
+            }
+            .bar {
+                border-color: red;
+            }
+            .foo {
+                border-style: dashed;
+            }
+        </style>
+    </head>
+    <body>
+        <div id="app2"></div>
+        <script type="module">
+            import {effect, ref} from 'vue';
+            import { renderer, normalizeClass } from './core.ts';
+            import { Text, Comment, Fragment } from './renderer.ts';
+
+
+            // 渲染器除了要执行挂载之外，还需要执行更新动作
+            // 通过将渲染器设计为可配置的通用渲染器，即可实现渲染到任意目标平台上
+            (() => {
+                effect(() => {
+                    const vnode = {
+                        type: Fragment,
+                        children: [
+                            {
+                                type: 'button',
+                                children: 'disabled',
+                                props: {
+                                    id: 'foo',
+                                    class: normalizeClass([
+                                        'bar',
+                                        { foo: true },
+                                        { baz: false }
+                                    ]),
+                                    disabled: false,
+                                    onClick: () => {
+                                        console.log('button clicked');
+                                    },
+                                }
+                            },
+                            {
+                                type: Text,
+                                children: 'text node',
+                            },
+                            {
+                                type: Comment,
+                                children: 'comment node',
+                            },
+                        ],
+                    };
+                    renderer.render(vnode, document.getElementById('app2'));
+                });
+            })();
+        </script>
+    </body>
+</html>
